@@ -1,0 +1,56 @@
+/* Authentication Styles */
+.auth-container {
+    max-width: 400px;
+    margin: 50px auto;
+    background-color: var(--light);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 30px;
+}
+
+.auth-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.auth-tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+}
+
+.auth-tab.active {
+    border-bottom: 2px solid var(--primary);
+    color: var(--primary);
+}
+
+.auth-form {
+    display: none;
+}
+
+.auth-form.active {
+    display: block;
+}
+
+.auth-title {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 22px;
+}
+
+.switch-auth {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.switch-auth a {
+    color: var(--primary);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.switch-auth a:hover {
+    text-decoration: underline;
+}
