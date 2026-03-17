@@ -68,50 +68,30 @@ function initializeData() {
     }
     
     if (!localStorage.getItem('landlords')) {
-        // Create a default landlord account
-        const defaultLandlord = {
-            id: 1,
-            name: 'Anthony',
-            email: 'landlord@anthonyhostels.com',
-            phone: '+254700000000',
-            password: 'admin123'
-        };
-        localStorage.setItem('landlords', JSON.stringify([defaultLandlord]));
+        // No default landlord - start with empty array
+        localStorage.setItem('landlords', JSON.stringify([]));
     }
     
     if (!localStorage.getItem('rooms')) {
-        // Create rooms data - make more rooms vacant for registration
+        // Create rooms data - ALL DOORS VACANT
         const roomsData = Array.from({ length: 45 }, (_, i) => {
             const doorNumber = i + 1;
-            // Make 80% of rooms vacant for demo purposes
-            const isOccupied = Math.random() > 0.8;
-            const tenantName = isOccupied ? `Tenant ${doorNumber}` : null;
-            const lastPaymentDate = isOccupied ? 
-                new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toLocaleDateString() : 
-                null;
-            
             return {
                 doorNumber,
-                status: isOccupied ? 'occupied' : 'vacant',
-                tenantName,
+                status: 'vacant', // All doors are vacant
+                tenantName: null,
                 rentAmount: MONTHLY_RENT,
-                lastPaymentDate,
-                lastPaymentAmount: isOccupied ? MONTHLY_RENT : null,
-                tenantId: isOccupied ? doorNumber : null
+                lastPaymentDate: null,
+                lastPaymentAmount: null,
+                tenantId: null
             };
         });
         localStorage.setItem('rooms', JSON.stringify(roomsData));
     }
     
     if (!localStorage.getItem('payments')) {
-        // Create some sample payment history
-        const payments = [
-            { id: 1, tenantId: 14, date: '2023-09-01', amount: MONTHLY_RENT, receiptNo: 'RCPT001', method: 'M-Pesa' },
-            { id: 2, tenantId: 14, date: '2023-08-01', amount: MONTHLY_RENT, receiptNo: 'RCPT002', method: 'M-Pesa' },
-            { id: 3, tenantId: 14, date: '2023-07-01', amount: MONTHLY_RENT, receiptNo: 'RCPT003', method: 'Bank Transfer' },
-            { id: 4, tenantId: 14, date: '2023-06-01', amount: MONTHLY_RENT, receiptNo: 'RCPT004', method: 'M-Pesa' }
-        ];
-        localStorage.setItem('payments', JSON.stringify(payments));
+        // Empty payment history
+        localStorage.setItem('payments', JSON.stringify([]));
     }
     
     if (!localStorage.getItem('maintenanceRequests')) {
@@ -255,16 +235,22 @@ function renderPaymentHistory() {
     if (currentUser && currentUserType === 'tenant') {
         const tenantPayments = paymentHistory.filter(payment => payment.tenantId === currentUser.doorNumber);
         
-        tenantPayments.forEach(payment => {
+        if (tenantPayments.length === 0) {
             const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${payment.date}</td>
-                <td>Ksh ${payment.amount.toLocaleString()}</td>
-                <td>${payment.receiptNo}</td>
-                <td>${payment.method}</td>
-            `;
+            row.innerHTML = `<td colspan="4" style="text-align: center;">No payment history found</td>`;
             paymentHistoryTable.appendChild(row);
-        });
+        } else {
+            tenantPayments.forEach(payment => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${payment.date}</td>
+                    <td>Ksh ${payment.amount.toLocaleString()}</td>
+                    <td>${payment.receiptNo}</td>
+                    <td>${payment.method}</td>
+                `;
+                paymentHistoryTable.appendChild(row);
+            });
+        }
     }
 }
 
@@ -274,41 +260,17 @@ function renderMaintenanceRequests() {
     tenantMaintenanceHistory.innerHTML = '';
     
     // For landlord dashboard
-    maintenanceRequests.forEach(request => {
+    if (maintenanceRequests.length === 0) {
         const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${request.date}</td>
-            <td>Door ${request.doorNumber}</td>
-            <td>${request.tenantName}</td>
-            <td>${request.title}</td>
-            <td>${request.urgency}</td>
-            <td>
-                <span class="maintenance-status status-${request.status}">
-                    ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                </span>
-            </td>
-            <td>
-                ${request.status === 'pending' ? 
-                    `<button class="btn btn-primary update-status-btn" data-id="${request.id}" data-status="in-progress">Start Work</button>` : 
-                    request.status === 'in-progress' ?
-                    `<button class="btn btn-primary update-status-btn" data-id="${request.id}" data-status="completed">Mark Complete</button>` :
-                    'Completed'
-                }
-            </td>
-        `;
+        row.innerHTML = `<td colspan="7" style="text-align: center;">No maintenance requests found</td>`;
         maintenanceRequestsTable.appendChild(row);
-    });
-    
-    // For tenant dashboard
-    if (currentUser && currentUserType === 'tenant') {
-        const tenantRequests = maintenanceRequests.filter(request => 
-            request.doorNumber === currentUser.doorNumber
-        );
-        
-        tenantRequests.forEach(request => {
+    } else {
+        maintenanceRequests.forEach(request => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${request.date}</td>
+                <td>Door ${request.doorNumber}</td>
+                <td>${request.tenantName}</td>
                 <td>${request.title}</td>
                 <td>${request.urgency}</td>
                 <td>
@@ -316,9 +278,45 @@ function renderMaintenanceRequests() {
                         ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                     </span>
                 </td>
+                <td>
+                    ${request.status === 'pending' ? 
+                        `<button class="btn btn-primary update-status-btn" data-id="${request.id}" data-status="in-progress">Start Work</button>` : 
+                        request.status === 'in-progress' ?
+                        `<button class="btn btn-primary update-status-btn" data-id="${request.id}" data-status="completed">Mark Complete</button>` :
+                        'Completed'
+                    }
+                </td>
             `;
-            tenantMaintenanceHistory.appendChild(row);
+            maintenanceRequestsTable.appendChild(row);
         });
+    }
+    
+    // For tenant dashboard
+    if (currentUser && currentUserType === 'tenant') {
+        const tenantRequests = maintenanceRequests.filter(request => 
+            request.doorNumber === currentUser.doorNumber
+        );
+        
+        if (tenantRequests.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td colspan="4" style="text-align: center;">No maintenance requests found</td>`;
+            tenantMaintenanceHistory.appendChild(row);
+        } else {
+            tenantRequests.forEach(request => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${request.date}</td>
+                    <td>${request.title}</td>
+                    <td>${request.urgency}</td>
+                    <td>
+                        <span class="maintenance-status status-${request.status}">
+                            ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                        </span>
+                    </td>
+                `;
+                tenantMaintenanceHistory.appendChild(row);
+            });
+        }
     }
     
     // Add event listeners to update status buttons
@@ -363,6 +361,7 @@ function toggleRoomStatus(doorNumber) {
             room.tenantName = null;
             room.lastPaymentDate = null;
             room.lastPaymentAmount = null;
+            room.tenantId = null;
         }
         
         saveData('rooms', roomsData);
@@ -450,6 +449,14 @@ function setupAuthEventListeners() {
             currentUserType = 'landlord';
             authModal.style.display = 'none';
             landlordDashboard.style.display = 'block';
+            
+            // Update landlord info in dashboard
+            document.getElementById('landlordName').textContent = landlord.name;
+            
+            // Refresh dashboard data
+            updateStats();
+            renderRoomsTable();
+            renderMaintenanceRequests();
         } else {
             alert('Invalid email or password. Please try again.');
         }
@@ -521,6 +528,7 @@ function setupAuthEventListeners() {
         document.getElementById('tenantRegPhone').value = '';
         document.getElementById('tenantRegPassword').value = '';
         document.getElementById('tenantRegConfirmPassword').value = '';
+        document.getElementById('tenantRegDoor').value = '';
         
         // Update the UI
         updateStats();
@@ -554,7 +562,7 @@ function setupAuthEventListeners() {
         
         // Create new landlord
         const newLandlord = {
-            id: landlords.length > 0 ? Math.max(...landlords.map(l => l.id)) + 1 : 2,
+            id: landlords.length > 0 ? Math.max(...landlords.map(l => l.id)) + 1 : 1,
             name,
             email,
             phone,
@@ -602,6 +610,14 @@ function setupAuthEventListeners() {
     // Auth tabs
     tenantTab.addEventListener('click', () => switchAuthTab('tenant'));
     landlordTab.addEventListener('click', () => switchAuthTab('landlord'));
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', (e) => {
+        if (e.target === authModal) {
+            authModal.style.display = 'none';
+            homePage.style.display = 'block';
+        }
+    });
 }
 
 // Set up dashboard event listeners
@@ -615,6 +631,11 @@ function setupDashboardEventListeners() {
     makePaymentBtn.addEventListener('click', () => {
         const amount = document.getElementById('paymentAmount').value;
         const method = document.getElementById('paymentMethod').value;
+        
+        if (!amount) {
+            alert('Please enter payment amount.');
+            return;
+        }
         
         if (currentUser && currentUserType === 'tenant') {
             // In a real app, you would process payment here
@@ -646,6 +667,9 @@ function setupDashboardEventListeners() {
             
             renderPaymentHistory();
             updateStats();
+            
+            // Clear payment amount
+            document.getElementById('paymentAmount').value = '';
         }
     });
     
@@ -712,6 +736,11 @@ function init() {
     // Set up event listeners
     setupAuthEventListeners();
     setupDashboardEventListeners();
+    
+    // Hide dashboards initially
+    tenantDashboard.style.display = 'none';
+    landlordDashboard.style.display = 'none';
+    authModal.style.display = 'none';
 }
 
 // Initialize the application when DOM is loaded
